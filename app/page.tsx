@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, CheckCircle2, Circle, Trash2, Tag, Calendar } from "lucide-react"
+import { Plus, Search, CheckCircle2, Circle, Trash2, Tag, Calendar, Wifi, WifiOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +36,8 @@ export default function TaskApp() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterTag, setFilterTag] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [isOnline, setIsOnline] = useState(true)
+  const [swStatus, setSwStatus] = useState("Carregando...")
 
   // Load tasks from localStorage on mount
   useEffect(() => {
@@ -57,6 +59,22 @@ export default function TaskApp() {
     }
   }, [tasks, isLoading])
 
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+
+    setIsOnline(navigator.onLine)
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
+
   // Reset daily tasks at midnight
   useEffect(() => {
     const resetDailyTasks = () => {
@@ -77,21 +95,40 @@ export default function TaskApp() {
     return () => clearInterval(interval)
   }, [])
 
-  // Register service worker
+  // ---- REGISTRO DO SERVICE WORKER ----
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("/sw.js")
-          .then((registration) => {
-            console.log("SW registrado com sucesso:", registration.scope)
-          })
-          .catch((registrationError) => {
-            console.log("SW falhou ao registrar:", registrationError)
-          })
-      })
+    if (!("serviceWorker" in navigator)) {
+      setSwStatus("❌ Service Worker não suportado")
+      return
     }
+
+    const swPath = "/sw.js" // deve estar em public/ ou via route handler
+
+    // Verifica se o arquivo realmente existe e tem MIME correto
+    fetch(swPath, { cache: "no-cache" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const type = res.headers.get("content-type") ?? ""
+        if (!type.includes("javascript")) {
+          throw new Error(`MIME inesperado: ${type}`)
+        }
+        return navigator.serviceWorker.register(swPath)
+      })
+      .then((registration) => {
+        console.log("✅ Service Worker registrado:", registration.scope)
+        setSwStatus("✅ Modo offline ativo")
+
+        // listener para futuras actualizações
+        registration.addEventListener("updatefound", () => {
+          console.log("🔄 Nova versão do Service Worker encontrada")
+        })
+      })
+      .catch((error) => {
+        console.error("❌ Falha ao registrar Service Worker:", error)
+        setSwStatus("❌ Modo offline indisponível")
+      })
   }, [])
+  // ---- FIM REGISTRO DO SERVICE WORKER ----
 
   const addTask = () => {
     if (!newTask.trim()) return
@@ -154,6 +191,17 @@ export default function TaskApp() {
             ✨ Minhas Tarefas
           </h1>
           <p className="text-gray-600 text-lg">Organize sua vida de forma simples e elegante</p>
+
+          {/* Status indicators */}
+          <div className="flex justify-center items-center gap-4 mt-4">
+            <div className="flex items-center gap-2">
+              {isOnline ? <Wifi className="w-4 h-4 text-green-500" /> : <WifiOff className="w-4 h-4 text-red-500" />}
+              <span className={`text-xs ${isOnline ? "text-green-600" : "text-red-600"}`}>
+                {isOnline ? "Online" : "Offline"}
+              </span>
+            </div>
+            <div className="text-xs text-gray-500">{swStatus}</div>
+          </div>
         </div>
 
         {/* Progress Bar */}
@@ -342,6 +390,9 @@ export default function TaskApp() {
         {/* Footer */}
         <div className="text-center mt-12 pb-8">
           <p className="text-sm text-gray-500">Feito com ❤️ para organizar sua vida</p>
+          <p className="text-xs text-gray-400 mt-2">
+            {!isOnline && "🔒 Funcionando offline - suas tarefas estão seguras!"}
+          </p>
         </div>
       </div>
     </div>
