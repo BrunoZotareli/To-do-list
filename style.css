@@ -1,0 +1,15 @@
+.tag-trabalho {
+  background-color: #70a4f7; /* azul */
+}
+
+.tag-pessoal {
+  background-color: #90ee74; /* verde claro */
+}
+
+.tag-urgente {
+  background-color: #ef4444; /* vermelho */
+}
+
+.tag-default {
+  background-color: #a3a3a3; /* cinza */
+}

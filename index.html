@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lista de Tarefas</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#28a745" />
+
+<style>
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 6px #28a745aa;
+      }
+      50% {
+        box-shadow: 0 0 14px #28a745ff;
+      }
+    }
+    #barraProgresso {
+      animation: pulse 2s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-[#d4f0e4] to-[#a3d9c1] min-h-screen flex justify-center items-start p-6">
+
+  <div class="bg-white w-full max-w-[450px] p-6 sm:p-8 rounded-lg shadow-lg flex flex-col gap-6 mx-3 sm:mx-auto">
+
+    <h1 class="font-extrabold text-2xl sm:text-[2.2rem] text-[#2f4858] text-center tracking-wide select-none">
+      📋 Minhas Tarefas
+    </h1>
+    
+    <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-4">
+      <input id="novaTarefa" placeholder="Digite a tarefa" 
+        class="flex-1 px-4 py-3 text-base border-2 border-[#a3d9c1] rounded-lg outline-none
+               focus:border-green-600 focus:ring-2 focus:ring-green-300 transition" />
+      <input id="novaTag" placeholder="Tag (ex: trabalho)" 
+        class="w-full sm:w-32 px-4 py-3 text-base border-2 border-[#a3d9c1] rounded-lg outline-none
+               focus:border-green-600 focus:ring-2 focus:ring-green-300 transition" />
+      <button id="btnAdicionar"
+        class="px-5 py-3 text-2xl rounded-lg bg-green-600 text-white cursor-pointer select-none
+               shadow-md hover:bg-green-700 transition active:scale-95">
+        +
+      </button>
+    </div>
+
+    <ul id="listaTarefas" class="list-none max-h-[360px] overflow-y-auto pr-2">
+      <!-- Aqui o JS vai renderizar as tarefas -->
+    </ul>
+
+    <div class="w-full h-6 bg-[#e6f0eb] rounded-full overflow-hidden shadow-inner shadow-black/10">
+      <div id="barraProgresso" 
+           class="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-l-full transition-all duration-400"
+           style="width: 0%">
+      </div>
+    </div>
+    <div id="textoProgresso" class="text-center mt-2 font-semibold text-base text-[#2f4858] select-none"></div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
