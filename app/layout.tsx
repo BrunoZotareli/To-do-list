@@ -14,7 +14,9 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Minhas Tarefas",
   },
-    generator: 'v0.dev'
+  generator: "v0.dev",
+  applicationName: "Minhas Tarefas",
+  keywords: ["tarefas", "agenda", "produtividade", "organização"],
 }
 
 export const viewport: Viewport = {
@@ -23,6 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 }
 
 export default function RootLayout({

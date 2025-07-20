@@ -77,6 +77,22 @@ export default function TaskApp() {
     return () => clearInterval(interval)
   }, [])
 
+  // Register service worker
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((registration) => {
+            console.log("SW registrado com sucesso:", registration.scope)
+          })
+          .catch((registrationError) => {
+            console.log("SW falhou ao registrar:", registrationError)
+          })
+      })
+    }
+  }, [])
+
   const addTask = () => {
     if (!newTask.trim()) return
 
