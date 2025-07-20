@@ -296,7 +296,7 @@ export default function TaskApp() {
                         {task.tag && (
                           <Badge
                             className={`text-xs ${
-                              tagColors[task.tag as keyof typeof tagColors] || tagColors.default
+                              tagColors[task.tag?.toLowerCase() as keyof typeof tagColors] || tagColors.default
                             } text-white`}
                           >
                             <Tag className="w-3 h-3 mr-1" />
