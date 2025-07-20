@@ -3,11 +3,12 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, CheckCircle2, Circle, Trash2, Tag } from "lucide-react"
+import { Plus, Search, CheckCircle2, Circle, Trash2, Tag, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface Task {
   id: string
@@ -15,12 +16,13 @@ interface Task {
   completed: boolean
   tag?: string
   createdAt: Date
+  isDaily?: boolean
 }
 
 const tagColors = {
   trabalho: "bg-slate-500 hover:bg-slate-600",
   pessoal: "bg-teal-500 hover:bg-teal-600",
-  urgente: "bg-blue-600 hover:bg-blue-700",
+  urgente: "bg-red-500 hover:bg-red-600",
   estudo: "bg-indigo-500 hover:bg-indigo-600",
   saude: "bg-cyan-500 hover:bg-cyan-600",
   default: "bg-gray-500 hover:bg-gray-600",
@@ -30,6 +32,7 @@ export default function TaskApp() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [newTask, setNewTask] = useState("")
   const [newTag, setNewTag] = useState("")
+  const [isDaily, setIsDaily] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterTag, setFilterTag] = useState("")
   const [isLoading, setIsLoading] = useState(true)
@@ -54,6 +57,26 @@ export default function TaskApp() {
     }
   }, [tasks, isLoading])
 
+  // Reset daily tasks at midnight
+  useEffect(() => {
+    const resetDailyTasks = () => {
+      const now = new Date()
+      const lastReset = localStorage.getItem("lastDailyReset")
+      const today = now.toDateString()
+
+      if (lastReset !== today) {
+        setTasks((prev) => prev.map((task) => (task.isDaily ? { ...task, completed: false } : task)))
+        localStorage.setItem("lastDailyReset", today)
+      }
+    }
+
+    resetDailyTasks()
+
+    // Check every minute for date change
+    const interval = setInterval(resetDailyTasks, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
   const addTask = () => {
     if (!newTask.trim()) return
 
@@ -63,11 +86,13 @@ export default function TaskApp() {
       completed: false,
       tag: newTag.trim() || undefined,
       createdAt: new Date(),
+      isDaily: isDaily,
     }
 
     setTasks((prev) => [task, ...prev])
     setNewTask("")
     setNewTag("")
+    setIsDaily(false)
   }
 
   const toggleTask = (id: string) => {
@@ -155,11 +180,27 @@ export default function TaskApp() {
                 />
                 <Button
                   onClick={addTask}
-                  className="h-12 px-6 bg-gradient-to-r from-slate-600 to-teal-600 hover:from-slate-700 hover:to-teal-700"
+                  className="h-12 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                   disabled={!newTask.trim()}
                 >
                   <Plus className="w-5 h-5" />
                 </Button>
+              </div>
+
+              {/* Daily Task Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="daily-task"
+                  checked={isDaily}
+                  onCheckedChange={(checked) => setIsDaily(checked as boolean)}
+                />
+                <label
+                  htmlFor="daily-task"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Tarefa diária (reseta automaticamente todo dia)
+                </label>
               </div>
             </div>
           </CardContent>
@@ -223,7 +264,9 @@ export default function TaskApp() {
             filteredTasks.map((task) => (
               <Card
                 key={task.id}
-                className={`transition-all duration-200 hover:shadow-md ${task.completed ? "opacity-75" : ""}`}
+                className={`transition-all duration-200 hover:shadow-md ${task.completed ? "opacity-75" : ""} ${
+                  task.isDaily ? "border-l-4 border-l-blue-500" : ""
+                }`}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
@@ -239,13 +282,16 @@ export default function TaskApp() {
                     </button>
 
                     <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-base sm:text-lg font-medium transition-all duration-200 ${
-                          task.completed ? "line-through text-gray-500" : "text-gray-900"
-                        }`}
-                      >
-                        {task.text}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p
+                          className={`text-base sm:text-lg font-medium transition-all duration-200 ${
+                            task.completed ? "line-through text-gray-500" : "text-gray-900"
+                          }`}
+                        >
+                          {task.text}
+                        </p>
+                        {task.isDaily && <Calendar className="w-4 h-4 text-blue-500" title="Tarefa diária" />}
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
                         {task.tag && (
                           <Badge
@@ -258,6 +304,7 @@ export default function TaskApp() {
                           </Badge>
                         )}
                         <span className="text-xs text-gray-400">{task.createdAt.toLocaleDateString("pt-BR")}</span>
+                        {task.isDaily && <span className="text-xs text-blue-500 font-medium">Diária</span>}
                       </div>
                     </div>
 
