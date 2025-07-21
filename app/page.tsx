@@ -20,7 +20,7 @@ interface Task {
 }
 
 const tagColors = {
-  trabalho: "bg-slate-500 hover:bg-slate-600",
+  trabalho: "bg-blue-500 hover:bg-blue-600",
   pessoal: "bg-teal-500 hover:bg-teal-600",
   urgente: "bg-red-500 hover:bg-red-600",
   estudo: "bg-indigo-500 hover:bg-indigo-600",
@@ -326,7 +326,7 @@ export default function TaskApp() {
             </Card>
           ) : (
             filteredTasks.map((task) => (
-              <Card
+              <div
                 key={task.id}
                 className={`transition-all duration-200 hover:shadow-md ${task.completed ? "opacity-75" : ""} ${
                   task.isDaily ? "border-l-4 border-l-blue-500" : ""
@@ -382,7 +382,7 @@ export default function TaskApp() {
                     </Button>
                   </div>
                 </CardContent>
-              </Card>
+              </div>
             ))
           )}
         </div>
