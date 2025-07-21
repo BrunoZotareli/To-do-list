@@ -6,7 +6,6 @@ import { useState, useEffect } from "react"
 import { Plus, Search, CheckCircle2, Circle, Trash2, Tag, Calendar, Wifi, WifiOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 
@@ -19,13 +18,23 @@ interface Task {
   isDaily?: boolean
 }
 
-const tagColors = {
-  trabalho: "bg-blue-500 hover:bg-blue-600",
-  pessoal: "bg-teal-500 hover:bg-teal-600",
-  urgente: "bg-red-500 hover:bg-red-600",
-  estudo: "bg-indigo-500 hover:bg-indigo-600",
-  saude: "bg-cyan-500 hover:bg-cyan-600",
-  default: "bg-gray-500 hover:bg-gray-600",
+// Função para obter a cor da tag
+const getTagColor = (tag: string) => {
+  const tagLower = tag.toLowerCase()
+  switch (tagLower) {
+    case "trabalho":
+      return "bg-blue-500 hover:bg-blue-600 border-blue-500"
+    case "pessoal":
+      return "bg-teal-500 hover:bg-teal-600 border-teal-500"
+    case "urgente":
+      return "bg-red-500 hover:bg-red-600 border-red-500"
+    case "estudo":
+      return "bg-indigo-500 hover:bg-indigo-600 border-indigo-500"
+    case "saude":
+      return "bg-cyan-500 hover:bg-cyan-600 border-cyan-500"
+    default:
+      return "bg-gray-500 hover:bg-gray-600 border-gray-500"
+  }
 }
 
 export default function TaskApp() {
@@ -358,14 +367,12 @@ export default function TaskApp() {
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         {task.tag && (
-                          <Badge
-                            className={`text-xs ${
-                              tagColors[task.tag?.toLowerCase() as keyof typeof tagColors] || tagColors.default
-                            } text-white`}
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white border ${getTagColor(task.tag)}`}
                           >
                             <Tag className="w-3 h-3 mr-1" />
                             {task.tag}
-                          </Badge>
+                          </span>
                         )}
                         <span className="text-xs text-gray-400">{task.createdAt.toLocaleDateString("pt-BR")}</span>
                         {task.isDaily && <span className="text-xs text-blue-500 font-medium">Diária</span>}
