@@ -3,7 +3,19 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, CheckCircle2, Circle, Trash2, Tag, Calendar, Wifi, WifiOff } from "lucide-react"
+import {
+  Plus,
+  Search,
+  CheckCircle2,
+  Circle,
+  Trash2,
+  Tag,
+  Calendar,
+  Wifi,
+  WifiOff,
+  Droplets,
+  Target,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -17,6 +29,12 @@ interface Task {
   tag?: string
   createdAt: Date
   isDaily?: boolean
+}
+
+interface WaterData {
+  goal: number
+  consumed: number
+  lastReset: string
 }
 
 const tagColors = {
@@ -39,6 +57,15 @@ export default function TaskApp() {
   const [isOnline, setIsOnline] = useState(true)
   const [swStatus, setSwStatus] = useState("Carregando...")
 
+  // Water tracking states
+  const [waterData, setWaterData] = useState<WaterData>({
+    goal: 2000, // 2L default
+    consumed: 0,
+    lastReset: new Date().toDateString(),
+  })
+  const [waterAmount, setWaterAmount] = useState("250")
+  const [newGoal, setNewGoal] = useState("")
+
   // Load tasks from localStorage on mount
   useEffect(() => {
     const savedTasks = localStorage.getItem("tasks")
@@ -49,6 +76,13 @@ export default function TaskApp() {
       }))
       setTasks(parsedTasks)
     }
+
+    // Load water data
+    const savedWaterData = localStorage.getItem("waterData")
+    if (savedWaterData) {
+      setWaterData(JSON.parse(savedWaterData))
+    }
+
     setIsLoading(false)
   }, [])
 
@@ -58,6 +92,13 @@ export default function TaskApp() {
       localStorage.setItem("tasks", JSON.stringify(tasks))
     }
   }, [tasks, isLoading])
+
+  // Save water data to localStorage whenever it changes
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.setItem("waterData", JSON.stringify(waterData))
+    }
+  }, [waterData, isLoading])
 
   // Monitor online/offline status
   useEffect(() => {
@@ -75,25 +116,35 @@ export default function TaskApp() {
     }
   }, [])
 
-  // Reset daily tasks at midnight
+  // Reset daily tasks and water at midnight
   useEffect(() => {
-    const resetDailyTasks = () => {
+    const resetDaily = () => {
       const now = new Date()
-      const lastReset = localStorage.getItem("lastDailyReset")
       const today = now.toDateString()
 
-      if (lastReset !== today) {
+      // Reset daily tasks
+      const lastTaskReset = localStorage.getItem("lastDailyReset")
+      if (lastTaskReset !== today) {
         setTasks((prev) => prev.map((task) => (task.isDaily ? { ...task, completed: false } : task)))
         localStorage.setItem("lastDailyReset", today)
       }
+
+      // Reset water consumption
+      if (waterData.lastReset !== today) {
+        setWaterData((prev) => ({
+          ...prev,
+          consumed: 0,
+          lastReset: today,
+        }))
+      }
     }
 
-    resetDailyTasks()
+    resetDaily()
 
     // Check every minute for date change
-    const interval = setInterval(resetDailyTasks, 60000)
+    const interval = setInterval(resetDaily, 60000)
     return () => clearInterval(interval)
-  }, [])
+  }, [waterData.lastReset])
 
   // ---- REGISTRO DO SERVICE WORKER ----
   useEffect(() => {
@@ -156,6 +207,35 @@ export default function TaskApp() {
     setTasks((prev) => prev.filter((task) => task.id !== id))
   }
 
+  // Water tracking functions
+  const addWater = () => {
+    const amount = Number.parseInt(waterAmount)
+    if (amount > 0) {
+      setWaterData((prev) => ({
+        ...prev,
+        consumed: prev.consumed + amount,
+      }))
+    }
+  }
+
+  const updateGoal = () => {
+    const goal = Number.parseInt(newGoal)
+    if (goal > 0) {
+      setWaterData((prev) => ({
+        ...prev,
+        goal: goal,
+      }))
+      setNewGoal("")
+    }
+  }
+
+  const resetWater = () => {
+    setWaterData((prev) => ({
+      ...prev,
+      consumed: 0,
+    }))
+  }
+
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch = task.text.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = !filterTag || task.tag === filterTag
@@ -166,11 +246,27 @@ export default function TaskApp() {
   const totalCount = tasks.length
   const progressPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
+  // Water progress calculation
+  const waterProgressPercentage = Math.min(Math.round((waterData.consumed / waterData.goal) * 100), 100)
+  const isWaterGoalReached = waterData.consumed >= waterData.goal
+
   const uniqueTags = Array.from(new Set(tasks.map((task) => task.tag).filter(Boolean)))
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       addTask()
+    }
+  }
+
+  const handleWaterKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      addWater()
+    }
+  }
+
+  const handleGoalKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      updateGoal()
     }
   }
 
@@ -208,7 +304,7 @@ export default function TaskApp() {
         <Card className="mb-6 overflow-hidden">
           <CardContent className="p-6">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-medium text-gray-700">Progresso</span>
+              <span className="text-sm font-medium text-gray-700">Progresso das Tarefas</span>
               <span className="text-sm font-bold text-slate-700">{progressPercentage}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
@@ -220,6 +316,91 @@ export default function TaskApp() {
             <p className="text-xs text-gray-500 mt-2">
               {completedCount} de {totalCount} tarefas concluídas
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Water Tracker */}
+        <Card className="mb-6 overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2">
+                <Droplets className="w-5 h-5 text-blue-500" />
+                <span className="text-sm font-medium text-gray-700">Hidratação Diária</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-bold ${isWaterGoalReached ? "text-blue-600" : "text-slate-700"}`}>
+                  {waterData.consumed}ml / {waterData.goal}ml
+                </span>
+                {isWaterGoalReached && <span className="text-lg">🎉</span>}
+              </div>
+            </div>
+
+            <div className="w-full bg-blue-100 rounded-full h-4 overflow-hidden mb-4">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ease-out ${
+                  isWaterGoalReached
+                    ? "bg-gradient-to-r from-blue-500 to-blue-600"
+                    : "bg-gradient-to-r from-blue-400 to-blue-500"
+                }`}
+                style={{ width: `${waterProgressPercentage}%` }}
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex gap-2 flex-1">
+                <Input
+                  type="number"
+                  placeholder="ml"
+                  value={waterAmount}
+                  onChange={(e) => setWaterAmount(e.target.value)}
+                  onKeyPress={handleWaterKeyPress}
+                  className="w-20 h-10"
+                  min="1"
+                />
+                <Button
+                  onClick={addWater}
+                  className="h-10 bg-blue-500 hover:bg-blue-600"
+                  disabled={!waterAmount || Number.parseInt(waterAmount) <= 0}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Adicionar
+                </Button>
+              </div>
+
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Nova meta (ml)"
+                  value={newGoal}
+                  onChange={(e) => setNewGoal(e.target.value)}
+                  onKeyPress={handleGoalKeyPress}
+                  className="w-32 h-10"
+                  min="1"
+                />
+                <Button
+                  onClick={updateGoal}
+                  variant="outline"
+                  className="h-10 bg-transparent"
+                  disabled={!newGoal || Number.parseInt(newGoal) <= 0}
+                >
+                  <Target className="w-4 h-4" />
+                </Button>
+                <Button
+                  onClick={resetWater}
+                  variant="outline"
+                  className="h-10 text-blue-600 hover:text-blue-700 bg-transparent"
+                >
+                  Reset
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center mt-3 text-xs text-gray-500">
+              <span>Progresso: {waterProgressPercentage}%</span>
+              <span>
+                {isWaterGoalReached ? `Parabéns! Meta atingida! 🎯` : `Faltam ${waterData.goal - waterData.consumed}ml`}
+              </span>
+            </div>
           </CardContent>
         </Card>
 
